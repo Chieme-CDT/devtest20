@@ -1,0 +1,42 @@
+trigger:
+- main
+
+name: Deploy Bicep files
+
+parameters:
+- name: azureServiceConnection
+  type: string
+  default: 'Azure Resource Manager Connection - RG-CDT-ODS-DEVSECOPS-CE-D-001'
+
+variables:
+  vmImageName: 'ubuntu-latest'
+  resourceGroupName: 'RG-CDT-ODS-DEVSECOPS-CE-D-001'
+  location: 'West US'
+  csmFileLink: 'https://github.com/Chieme-CDT/devtest/blob/main/vnet.bicep'
+  templateFile: './main.bicep'
+  csmParametersFile: './main.bicepparam'
+  #bicepParamFile: 
+  sshKeyPath: $(Build.ArtifactStagingDirectory)/ssh_key
+  keyVaultName: 'devtest-k8-keyvault'
+
+pool:
+  vmImage: $(vmImageName)
+
+steps:
+- task: AzureResourceManagerTemplateDeployment@3
+  displayName: 'Deploy AKS'
+  inputs:
+    deploymentScope: 'Resource Group'
+    azureResourceManagerConnection: '${{ parameters.azureServiceConnection }}'
+    action: 'Create Or Update Resource Group'
+    resourceGroupName: '$(resourceGroupName)'
+    location: '$(location)'
+    csmFile: './main.bicep'
+    deploymentMode: 'Incremental'
+    deploymentName: 'DeployDependentTemplate'
+
+- task: PublishPipelineArtifact@1
+  inputs:
+    targetPath: '$(Pipeline.Workspace)'
+    artifact: 'groundwork'
+    publishLocation: 'pipeline'
